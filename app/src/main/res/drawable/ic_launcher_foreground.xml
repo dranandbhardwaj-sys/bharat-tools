@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer crisp diamond frame in saffron -->
+    <path
+        android:fillColor="#FFFF7A1A"
+        android:pathData="M54,24 L82,54 L54,84 L26,54 Z M54,32 L34,54 L54,76 L74,54 Z" />
+    <!-- Top-left utility quadrant block (PDF/Doc) in pure white -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42,40 H52 V52 H42 Z" />
+    <!-- Top-right utility quadrant block (QR/Grid) in warm amber -->
+    <path
+        android:fillColor="#FFFFB74D"
+        android:pathData="M56,40 H66 V50 H56 Z" />
+    <!-- Bottom-left utility quadrant block (Calc) in teal mint -->
+    <path
+        android:fillColor="#FF26D7C4"
+        android:pathData="M42,56 H52 V66 H42 Z" />
+    <!-- Bottom-right precision spark in pure white -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M56,54 L68,54 L62,68 L56,62 Z" />
+</vector>

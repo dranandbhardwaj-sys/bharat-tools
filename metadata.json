@@ -1,0 +1,6 @@
+{
+  "name": "Bharat Tools",
+  "description": "Mobile-first digital utility suite for PDF, Image, Text, QR Code, and everyday calculators in Hindi and English.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

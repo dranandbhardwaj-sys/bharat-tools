@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile, preferences, favorites, recent tools, and server-verified monthly subscription status",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "photoUrl": { "type": "string", "description": "Optional profile photo URL" },
+        "preferredLanguage": { "type": "string", "enum": ["en", "hi"], "description": "UI language" },
+        "themeMode": { "type": "string", "enum": ["system", "light", "dark"], "description": "App theme preference" },
+        "referralCode": { "type": "string", "description": "Unique referral attribution code" },
+        "referredByCode": { "type": "string", "description": "Optional referrer attribution code" },
+        "favorites": { "type": "array", "description": "List of favorited tool IDs" },
+        "recentTools": { "type": "array", "description": "List of recently used tool IDs" },
+        "subscriptionStatus": { "type": "string", "enum": ["free", "pending", "active", "expired", "cancelled"], "description": "Server-verified monthly subscription status" },
+        "autoRenewConsent": { "type": "boolean", "description": "User-approved recurring monthly renewal consent" },
+        "subscriptionPeriodEnd": { "type": "string", "format": "date-time", "description": "Optional end timestamp of current monthly cycle" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "displayName", "email", "preferredLanguage", "themeMode", "referralCode", "favorites", "recentTools", "subscriptionStatus", "autoRenewConsent", "createdAt", "updatedAt"]
+    },
+    "ToolHistory": {
+      "title": "ToolHistory",
+      "description": "User-scoped log of recent tool runs and saved utility outputs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID" },
+        "toolId": { "type": "string", "description": "Tool identifier" },
+        "title": { "type": "string", "description": "Short entry title" },
+        "summary": { "type": "string", "description": "Summary of utility output" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "toolId", "title", "summary", "createdAt", "updatedAt"]
+    },
+    "PurchaseRecord": {
+      "title": "PurchaseRecord",
+      "description": "₹399/month recurring subscription billing, renewal, cancellation, failure, and refund verification record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "amountInr": { "type": "integer" },
+        "billingCycle": { "type": "string", "enum": ["monthly_recurring"] },
+        "paymentMethod": { "type": "string", "enum": ["upi_autopay", "upi_reference", "gateway_mandate", "play_subscription"] },
+        "referenceId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "expired", "cancelled", "failed", "refund_requested", "refunded"] },
+        "userConsentAccepted": { "type": "boolean" },
+        "receiptNumber": { "type": "string" },
+        "periodLabel": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userEmail", "amountInr", "billingCycle", "paymentMethod", "referenceId", "status", "userConsentAccepted", "receiptNumber", "periodLabel", "notes", "createdAt", "updatedAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "User help and support ticket",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "category": { "type": "string", "enum": ["billing", "bug", "feature", "account", "refund"] },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved"] },
+        "adminReply": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userEmail", "category", "subject", "message", "status", "adminReply", "createdAt", "updatedAt"]
+    },
+    "ReferralAttribution": {
+      "title": "ReferralAttribution",
+      "description": "Single-tier referral attribution tied to verified subscriptions",
+      "type": "object",
+      "properties": {
+        "referrerCode": { "type": "string" },
+        "referredUserId": { "type": "string" },
+        "status": { "type": "string", "enum": ["registered", "verified_subscription"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["referrerCode", "referredUserId", "status", "createdAt", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Admin-published bilingual product announcement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "titleHi": { "type": "string" },
+        "body": { "type": "string" },
+        "bodyHi": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "titleHi", "body", "bodyHi", "active", "createdAt", "updatedAt"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Global application configuration",
+      "type": "object",
+      "properties": {
+        "priceInr": { "type": "integer" },
+        "trialToolsLimit": { "type": "integer" },
+        "maintenanceMode": { "type": "boolean" },
+        "supportEmail": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["priceInr", "trialToolsLimit", "maintenanceMode", "supportEmail", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profiles and subscription state"
+    },
+    "/users/{userId}/tool_history/{historyId}": {
+      "schema": { "$ref": "#/entities/ToolHistory" },
+      "description": "User-scoped utility execution history"
+    },
+    "/purchases/{purchaseId}": {
+      "schema": { "$ref": "#/entities/PurchaseRecord" },
+      "description": "Monthly subscription billing history and verification records"
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Customer support tickets"
+    },
+    "/referrals/{referralId}": {
+      "schema": { "$ref": "#/entities/ReferralAttribution" },
+      "description": "Referral attribution records"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Broadcast product announcements"
+    },
+    "/app_config/{configId}": {
+      "schema": { "$ref": "#/entities/AppConfig" },
+      "description": "Global application configuration"
+    }
+  }
+}

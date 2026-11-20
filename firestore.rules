@@ -1,0 +1,300 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'dranandbhardwaj@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() <= 120 &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 500)) &&
+             data.preferredLanguage in ['en', 'hi'] &&
+             data.themeMode in ['system', 'light', 'dark'] &&
+             data.referralCode is string && data.referralCode.size() >= 4 && data.referralCode.size() <= 24 &&
+             (!('referredByCode' in data) || (data.referredByCode is string && data.referredByCode.size() <= 24)) &&
+             data.favorites is list && data.favorites.size() <= 50 && (data.favorites.size() == 0 || data.favorites[0] is string) &&
+             data.recentTools is list && data.recentTools.size() <= 20 && (data.recentTools.size() == 0 || data.recentTools[0] is string) &&
+             data.subscriptionStatus in ['free', 'pending', 'active', 'expired', 'cancelled'] &&
+             data.autoRenewConsent is bool &&
+             (!('subscriptionPeriodEnd' in data) || data.subscriptionPeriodEnd is timestamp);
+    }
+
+    function isValidToolHistory(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.toolId is string && data.toolId.size() >= 1 && data.toolId.size() <= 60 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 400;
+    }
+
+    function isValidPurchase(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 120 &&
+             data.amountInr is int && data.amountInr == 399 &&
+             data.billingCycle == 'monthly_recurring' &&
+             data.paymentMethod in ['upi_autopay', 'upi_reference', 'gateway_mandate', 'play_subscription'] &&
+             data.referenceId is string && data.referenceId.size() >= 4 && data.referenceId.size() <= 80 &&
+             data.status in ['pending', 'active', 'expired', 'cancelled', 'failed', 'refund_requested', 'refunded'] &&
+             data.userConsentAccepted is bool &&
+             data.receiptNumber is string && data.receiptNumber.size() <= 40 &&
+             data.periodLabel is string && data.periodLabel.size() <= 60 &&
+             data.notes is string && data.notes.size() <= 300;
+    }
+
+    function isValidSupportTicket(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 120 &&
+             data.category in ['billing', 'bug', 'feature', 'account', 'refund'] &&
+             data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 120 &&
+             data.message is string && data.message.size() >= 5 && data.message.size() <= 1000 &&
+             data.status in ['open', 'in_progress', 'resolved'] &&
+             data.adminReply is string && data.adminReply.size() <= 1000;
+    }
+
+    function isValidReferral(data) {
+      return data.referrerCode is string && data.referrerCode.size() >= 4 && data.referrerCode.size() <= 24 &&
+             data.referredUserId is string && data.referredUserId.size() >= 1 && data.referredUserId.size() <= 128 &&
+             data.status in ['registered', 'verified_subscription'];
+    }
+
+    function isValidAnnouncement(data) {
+      return data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+             data.titleHi is string && data.titleHi.size() <= 120 &&
+             data.body is string && data.body.size() >= 2 && data.body.size() <= 600 &&
+             data.bodyHi is string && data.bodyHi.size() <= 600 &&
+             data.active is bool;
+    }
+
+    function isValidAppConfig(data) {
+      return data.priceInr is int && data.priceInr == 399 &&
+             data.trialToolsLimit is int && data.trialToolsLimit >= 1 && data.trialToolsLimit <= 100 &&
+             data.maintenanceMode is bool &&
+             data.supportEmail is string && data.supportEmail.size() >= 3 && data.supportEmail.size() <= 120;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().subscriptionStatus == 'free' &&
+                       incoming().autoRenewConsent == false &&
+                       !('subscriptionPeriodEnd' in incoming()) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'email', 'preferredLanguage', 'themeMode', 'referralCode', 'favorites', 'recentTools', 'subscriptionStatus', 'autoRenewConsent', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'photoUrl', 'preferredLanguage', 'themeMode', 'referralCode', 'referredByCode', 'favorites', 'recentTools', 'subscriptionStatus', 'autoRenewConsent', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time && (
+                         isAdmin() || (
+                           request.auth.uid == userId &&
+                           incoming().referralCode == existing().referralCode &&
+                           (
+                             (
+                               incoming().subscriptionStatus == existing().subscriptionStatus &&
+                               incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'preferredLanguage', 'themeMode', 'referredByCode', 'favorites', 'recentTools', 'autoRenewConsent', 'updatedAt'])
+                             ) ||
+                             (
+                               existing().subscriptionStatus == 'active' &&
+                               incoming().subscriptionStatus == 'cancelled' &&
+                               incoming().autoRenewConsent == false &&
+                               incoming().diff(existing()).affectedKeys().hasOnly(['subscriptionStatus', 'autoRenewConsent', 'updatedAt'])
+                             )
+                           )
+                         )
+                       );
+
+      allow delete: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+
+      match /tool_history/{historyId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(historyId) && (request.auth.uid == userId || isAdmin());
+        allow list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(historyId) &&
+                         request.auth.uid == userId &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().keys().hasAll(['userId', 'toolId', 'title', 'summary', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'toolId', 'title', 'summary', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidToolHistory(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(historyId) &&
+                         isValidToolHistory(incoming()) &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'summary', 'updatedAt']);
+
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(historyId) && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    match /purchases/{purchaseId} {
+      allow get: if isSignedIn() && isValidId(purchaseId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(purchaseId) &&
+                       isValidPurchase(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'pending' &&
+                       incoming().userConsentAccepted == true &&
+                       incoming().receiptNumber == '' &&
+                       incoming().keys().hasAll(['userId', 'userEmail', 'amountInr', 'billingCycle', 'paymentMethod', 'referenceId', 'status', 'userConsentAccepted', 'receiptNumber', 'periodLabel', 'notes', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'userEmail', 'amountInr', 'billingCycle', 'paymentMethod', 'referenceId', 'status', 'userConsentAccepted', 'receiptNumber', 'periodLabel', 'notes', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(purchaseId) &&
+                       isValidPurchase(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time && (
+                         isAdmin() || (
+                           existing().userId == request.auth.uid &&
+                           existing().status == 'active' &&
+                           incoming().status in ['cancelled', 'refund_requested'] &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isAdmin();
+    }
+
+    match /support_tickets/{ticketId} {
+      allow get: if isSignedIn() && isValidId(ticketId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(ticketId) &&
+                       isValidSupportTicket(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'open' &&
+                       incoming().adminReply == '' &&
+                       incoming().keys().hasAll(['userId', 'userEmail', 'category', 'subject', 'message', 'status', 'adminReply', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'userEmail', 'category', 'subject', 'message', 'status', 'adminReply', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(ticketId) &&
+                       isValidSupportTicket(incoming()) &&
+                       isAdmin() &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminReply', 'updatedAt']);
+
+      allow delete: if isAdmin();
+    }
+
+    match /referrals/{referralId} {
+      allow get: if isSignedIn() && isValidId(referralId) && (existing().referredUserId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.referredUserId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(referralId) &&
+                       isValidReferral(incoming()) &&
+                       incoming().referredUserId == request.auth.uid &&
+                       incoming().status == 'registered' &&
+                       incoming().keys().hasAll(['referrerCode', 'referredUserId', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['referrerCode', 'referredUserId', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(referralId) &&
+                       isValidReferral(incoming()) &&
+                       isAdmin() &&
+                       incoming().referredUserId == existing().referredUserId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isSignedIn() && isValidId(announcementId) && (existing().active == true || isAdmin());
+      allow list: if isSignedIn() && (resource.data.active == true || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(announcementId) &&
+                       isAdmin() &&
+                       isValidAnnouncement(incoming()) &&
+                       incoming().keys().hasAll(['title', 'titleHi', 'body', 'bodyHi', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'titleHi', 'body', 'bodyHi', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(announcementId) &&
+                       isAdmin() &&
+                       isValidAnnouncement(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'titleHi', 'body', 'bodyHi', 'active', 'updatedAt']);
+
+      allow delete: if isAdmin();
+    }
+
+    match /app_config/{configId} {
+      allow get: if isSignedIn() && isValidId(configId);
+      allow list: if isAdmin();
+      allow create, update: if isSignedIn() &&
+                               isValidId(configId) &&
+                               isAdmin() &&
+                               isValidAppConfig(incoming()) &&
+                               incoming().keys().hasAll(['priceInr', 'trialToolsLimit', 'maintenanceMode', 'supportEmail', 'updatedAt']) &&
+                               incoming().keys().hasOnly(['priceInr', 'trialToolsLimit', 'maintenanceMode', 'supportEmail', 'updatedAt']) &&
+                               incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if false;
+    }
+
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && request.auth.uid == adminUid;
+      allow list, create, update, delete: if false;
+    }
+  }
+}
