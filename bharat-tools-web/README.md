@@ -50,8 +50,18 @@ bharat-tools-web/
 
 ## GitHub Pages Deployment
 
-1. Create a GitHub repository named `bharat-tools-web`.
-2. Upload the **contents** of this `bharat-tools-web/` folder to the repository root (so `index.html` is at `/index.html` in your repository).
+### Option A — Same Repository (Android + Web uploaded together)
+This repository already includes `.github/workflows/deploy-web.yml` to publish **only** `bharat-tools-web/` to GitHub Pages without touching the Android app:
+1. Open your GitHub repository → **Settings → Pages**.
+2. Under **Build and deployment → Source**, choose **GitHub Actions** (instead of "Deploy from a branch").
+3. Open the **Actions** tab → select **Deploy Bharat Tools Web to GitHub Pages** → click **Run workflow** (or push any update to `main`).
+4. Once finished, your live web app URL is `https://USERNAME.github.io/REPO_NAME/`.
+
+*(If you keep **Source: Deploy from a branch** on `main / (root)`, append `/bharat-tools-web/` to your URL: `https://USERNAME.github.io/REPO_NAME/bharat-tools-web/`.)*
+
+### Option B — Separate Web-Only Repository
+1. Create a new GitHub repository named `bharat-tools-web`.
+2. Upload **only the files inside** `bharat-tools-web/` to the repository root (so `index.html` is at `/index.html`, not inside a subfolder).
 3. In **Settings → Pages**, select **Deploy from a branch** (`main` / `/ (root)`).
 4. Visit `https://USERNAME.github.io/bharat-tools-web/`. All asset, script, manifest, and service-worker paths use `./` relative paths for subpath compatibility.
 
