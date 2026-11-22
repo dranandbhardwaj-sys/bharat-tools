@@ -174,7 +174,7 @@ export async function runPdfTool(action, files, options = {}) {
 
   const PDFLib = window.PDFLib;
   if (!PDFLib) {
-    throw new Error('Multi-page PDF manipulation library (pdf-lib) requires an online load once to cache for offline use. Image-to-PDF and PDF Preview work 100% offline right now.');
+    throw new Error('PDF library (pdf-lib) failed to load. Reload the page once and try again. Image-to-PDF and PDF Preview work without it.');
   }
 
   const { PDFDocument, degrees, rgb, StandardFonts } = PDFLib;
