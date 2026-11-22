@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bharat-tools-web-v2';
+const CACHE_NAME = 'bharat-tools-web-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -14,7 +14,8 @@ const APP_SHELL = [
   './js/qr-engine.js',
   './js/tools-engine.js',
   './js/subscription.js',
-  './js/app.js'
+  './js/app.js',
+  './js/vendor/pdf-lib.min.js'
 ];
 
 self.addEventListener('install', (event) => {
